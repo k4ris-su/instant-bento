@@ -34,124 +34,135 @@ export async function POST(request: NextRequest) {
     const imageMimeType = imageParts[0]?.includes('data:') ? 
       imageParts[0].split(':')[1].split(';')[0] : 'image/jpeg';
 
-    // ✅ CORRECT: Use proper Gemini models according to API docs
-    // - gemini-2.5-flash: For text generation
-    // - gemini-2.5-flash-image: For image generation
-    const textModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const imageModel = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash-image",
+    // Use the user-requested model
+    // "hãy sử dụng model models/gemini-3-pro-preview"
+    // We will use a single model for the "Agent" workflow to maintain context
+    const model = genAI.getGenerativeModel({ 
+      model: "models/gemini-3-pro-preview",
+      generationConfig: {
+        temperature: 1.0, // Recommended for Gemini 3
+      }
     });
 
-    // Prompt for text generation (portfolio data)
-    const textPrompt = `You are a senior copywriter. Create a professional portfolio based on this information: "${text}".
+    // We will also keep the image model for the specific image generation task
+    // using the model from the docs provided
+    const imageModel = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash-image", 
+    });
 
-Please provide a JSON response with this exact structure:
-{
-  "name": "Full Name",
-  "title": "Professional Title",
-  "bio": "A compelling 2-3 sentence bio that highlights key skills and personality",
-  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
-  "socials": [
-    {"platform": "LinkedIn", "url": "https://linkedin.com/in/username"},
-    {"platform": "GitHub", "url": "https://github.com/username"},
-    {"platform": "Twitter", "url": "https://twitter.com/username"}
-  ],
-  "colorTheme": "#hexcolor"
-}
+    console.log("🚀 Starting Agentic Workflow...");
 
-Choose a color theme that matches the personality described in the text. Make the bio witty and engaging. Keep skills relevant and concise.`;
-
-    // ✅ CORRECT: Image EDITING prompt according to Gemini docs
-    // Gemini can EDIT images using Image + Text-to-Image approach
-    // This is semantic masking/inpainting - it modifies the image based on text instructions
-    const imagePrompt = `Using the provided portrait photo, enhance it into a professional headshot with these changes:
-- Transform the background to a clean, minimalist studio background with soft gradient
-- Adjust lighting to soft, professional studio quality with natural highlights
-- Keep the person's facial features, expression, and identity EXACTLY the same
-- Enhance the overall professional appearance suitable for a portfolio
-- Maintain sharp focus on the face
-- Create a warm, approachable atmosphere
-- Preserve the original pose and framing
-
-Only modify the background and lighting - do not change the person's appearance, clothing, or pose.`;
-
-    console.log("🚀 Generating portfolio with Gemini API...");
-
-    // Run both AI processes in parallel
-    const [textResult, imageResult] = await Promise.all([
-      textModel.generateContent(textPrompt),
-      imageModel.generateContent([
-        imagePrompt,
-        {
-          inlineData: {
-            data: imageBase64,
-            mimeType: imageMimeType,
-          },
+    // Step 1: Image Enhancement (Parallel)
+    // We start this immediately as it takes time
+    const imagePromise = imageModel.generateContent([
+      `Using the provided portrait photo, enhance it into a professional headshot with these changes:
+      - Transform the background to a clean, minimalist studio background with soft gradient
+      - Adjust lighting to soft, professional studio quality with natural highlights
+      - Keep the person's facial features, expression, and identity EXACTLY the same
+      - Enhance the overall professional appearance suitable for a portfolio
+      - Maintain sharp focus on the face
+      - Create a warm, approachable atmosphere
+      - Preserve the original pose and framing
+      
+      Only modify the background and lighting - do not change the person's appearance, clothing, or pose.`,
+      {
+        inlineData: {
+          data: imageBase64,
+          mimeType: imageMimeType,
         },
-      ]),
+      },
     ]);
 
-    // Parse text response
-    const textResponse = await textResult.response.text();
-    console.log("📄 Raw AI Response:", textResponse);
-    let portfolioData;
+    // Step 2: Agent Thinking & Content Generation
+    // We create a stream to send "thoughts" and then the final JSON
+    const textPrompt = `
+    Role: You are an elite Design Agent & Content Strategist.
+    Task: Create a world-class personal portfolio based on the user's raw input: "${text}".
     
-    try {
-      // Extract JSON from the response
-      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        portfolioData = JSON.parse(jsonMatch[0]);
-        console.log("✅ Successfully parsed portfolio data");
-      } else {
-        throw new Error("No JSON found in response");
-      }
-    } catch (parseError) {
-      console.error("⚠️ Failed to parse JSON response:", textResponse);
-      // Fallback data
-      portfolioData = {
-        name: "Professional",
-        title: "Creative Developer",
-        bio: "Passionate about creating beautiful and functional digital experiences.",
-        skills: ["JavaScript", "React", "Node.js", "Design", "Problem Solving"],
-        socials: [
-          { platform: "LinkedIn", url: "https://linkedin.com" },
-          { platform: "GitHub", url: "https://github.com" },
-        ],
-        colorTheme: "#3B82F6",
-      };
+    Process:
+    1. ANALYZE: Deeply analyze the input text to understand the user's persona, key strengths, and potential role.
+    2. STRATEGIZE: Plan the portfolio structure. Decide on a unique angle (e.g., "The Innovative Problem Solver" or "The Minimalist Creator").
+    3. GENERATE: Write compelling, high-converting copy.
+       - Name: Extrapolate or use the provided name.
+       - Title: Create a powerful, modern job title.
+       - Bio: Write a punchy, memorable bio (not generic).
+       - Skills: Curate a list of high-impact skills.
+       - Socials: format provided links or placeholders.
+       - Color Theme: Pick a sophisticated hex code matching the persona.
+       - Bento Layout Strategy: Decide how to arrange the grid (implied by the content weight).
+    
+    Output Format:
+    First, output your "THOUGHTS" block where you explain your reasoning step-by-step.
+    Then, output the final "JSON" block.
+    
+    Example structure:
+    THOUGHTS:
+    - User mentioned "design" and "code", suggesting a Design Engineer persona.
+    - I will focus on a clean, swiss-style aesthetic.
+    - Bio should be punchy.
+    ...
+    JSON:
+    {
+      "name": "...",
+      "title": "...",
+      "bio": "...",
+      "skills": [...],
+      "socials": [...],
+      "colorTheme": "#...",
+      "stats": [
+         {"label": "Years Exp", "value": "5+"},
+         {"label": "Projects", "value": "20+"}
+      ]
     }
+    `;
 
-    // ✅ CORRECT: Extract generated image from Gemini response
-    let processedImage = `data:${imageMimeType};base64,${imageBase64}`; // Default to original
-    
-    try {
-      const imageResponse = imageResult.response;
-      if (imageResponse.candidates && imageResponse.candidates.length > 0) {
-        const candidate = imageResponse.candidates[0];
-        
-        if (candidate.content && candidate.content.parts) {
-          for (const part of candidate.content.parts) {
-            // Check if this part contains inline image data
-            if (part.inlineData && part.inlineData.data) {
-              const generatedImageBase64 = part.inlineData.data;
-              const generatedMimeType = part.inlineData.mimeType || 'image/png';
-              processedImage = `data:${generatedMimeType};base64,${generatedImageBase64}`;
-              console.log("✅ Successfully generated new image with Gemini");
-              break;
-            }
+    const result = await model.generateContentStream(textPrompt);
+
+    // Create a readable stream for the client
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+
+        try {
+          // Stream text generation (Thoughts + Partial JSON)
+          let fullText = "";
+          for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            fullText += chunkText;
+            // Send chunk to client
+            controller.enqueue(encoder.encode(JSON.stringify({ type: 'chunk', content: chunkText }) + "\n"));
           }
-        }
-      } else {
-        console.log("⚠️ No image generated, using original image");
-      }
-    } catch (imageError) {
-      console.error("⚠️ Error processing generated image:", imageError);
-      console.log("📌 Using original image as fallback");
-    }
 
-    return NextResponse.json({
-      ...portfolioData,
-      processedImage,
+          // Wait for image generation
+          let processedImage = `data:${imageMimeType};base64,${imageBase64}`;
+          try {
+            const imageResult = await imagePromise;
+            const candidate = imageResult.response.candidates?.[0];
+            if (candidate?.content?.parts?.[0]?.inlineData) {
+               const imgPart = candidate.content.parts[0].inlineData;
+               processedImage = `data:${imgPart.mimeType || 'image/png'};base64,${imgPart.data}`;
+            }
+          } catch (e) {
+            console.error("Image generation failed", e);
+          }
+
+          // Send final image event
+          controller.enqueue(encoder.encode(JSON.stringify({ type: 'image', content: processedImage }) + "\n"));
+
+          // Close stream
+          controller.close();
+        } catch (error) {
+          console.error("Streaming error", error);
+          controller.error(error);
+        }
+      },
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Transfer-Encoding': 'chunked',
+      },
     });
 
   } catch (error: any) {

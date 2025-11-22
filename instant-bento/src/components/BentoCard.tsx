@@ -16,8 +16,7 @@ export function BentoCard({
   return (
     <div
       className={cn(
-        "rounded-2xl bg-white p-6 shadow-sm border border-gray-100",
-        "dark:bg-gray-900 dark:border-gray-800",
+        "rounded-2xl bg-[var(--card)] p-6 shadow-soft border border-[var(--border)]",
         "transition-all duration-300 hover:shadow-md",
         colSpan > 1 && `col-span-${colSpan}`,
         rowSpan > 1 && `row-span-${rowSpan}`,

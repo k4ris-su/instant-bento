@@ -5,14 +5,21 @@ import { BentoCard } from "@/components/BentoCard";
 import { UploadForm } from "@/components/UploadForm";
 import { BentoGrid } from "@/components/BentoGrid";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { H1, Muted } from "@/components/ui/Typography";
+import { Button } from "@/components/ui/Button";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [portfolioData, setPortfolioData] = useState<any>(null);
 
+  const [streamLog, setStreamLog] = useState<string>("");
+  const [isThinking, setIsThinking] = useState(false);
+
   const handleGenerate = async (formData: { image: File; text: string }) => {
     console.log("🚀 Starting portfolio generation...");
     setIsLoading(true);
+    setIsThinking(true);
+    setStreamLog("");
     
     try {
       // Convert image to base64
@@ -21,44 +28,88 @@ export default function Home() {
       
       reader.onloadend = async () => {
         const base64Image = reader.result as string;
-        console.log("📸 Image converted to base64, length:", base64Image.length);
         
         try {
-          console.log("🔄 Calling API with text:", formData.text);
           const response = await fetch("/api/generate-portfolio", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              image: base64Image,
-              text: formData.text,
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: base64Image, text: formData.text }),
           });
           
-          if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
+          if (!response.ok) throw new Error(`API Error: ${response.status}`);
+          if (!response.body) throw new Error("No response body");
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let accumulatedText = "";
+          let finalImage = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split("\n");
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              
+              try {
+                const data = JSON.parse(line);
+                
+                if (data.type === 'chunk') {
+                  accumulatedText += data.content;
+                  setStreamLog(prev => prev + data.content);
+                } else if (data.type === 'image') {
+                  finalImage = data.content;
+                }
+              } catch (e) {
+                console.warn("Error parsing stream chunk", e);
+              }
+            }
           }
-          
-          const data = await response.json();
-          console.log("📊 Received portfolio data:", data);
-          setPortfolioData(data);
+
+          // Parse the final JSON from the accumulated text
+          // We look for the JSON block after the "THOUGHTS" section
+          const jsonMatch = accumulatedText.match(/JSON:\s*(\{[\s\S]*\})/);
+          let finalData;
+
+          if (jsonMatch) {
+            try {
+              finalData = JSON.parse(jsonMatch[1]);
+            } catch (e) {
+              console.error("Failed to parse final JSON", e);
+            }
+          } else {
+             // Fallback: try to find any JSON object
+             const fallbackMatch = accumulatedText.match(/\{[\s\S]*\}/);
+             if (fallbackMatch) {
+                try {
+                  finalData = JSON.parse(fallbackMatch[0]);
+                } catch(e) { console.error("Fallback parse failed", e); }
+             }
+          }
+
+          if (finalData) {
+            setPortfolioData({
+              ...finalData,
+              processedImage: finalImage || base64Image
+            });
+          }
+
           setIsLoading(false);
-          console.log("✅ Portfolio generation complete!");
+          setIsThinking(false);
         } catch (error) {
           console.error("❌ Error generating portfolio:", error);
           setIsLoading(false);
+          setIsThinking(false);
         }
-      };
-      
-      reader.onerror = () => {
-        console.error("❌ Error reading image file");
-        setIsLoading(false);
       };
       
     } catch (error) {
       console.error("❌ Error generating portfolio:", error);
       setIsLoading(false);
+      setIsThinking(false);
     }
   };
 
@@ -69,32 +120,41 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Instant Bento
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300">
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="container-modern py-12">
+        <header className="mb-10">
+          <H1>Instant Bento</H1>
+          <Muted>
             From Chaos to Portfolio in 5 Seconds
-          </p>
-        </div>
+          </Muted>
+        </header>
 
         {!portfolioData && !isLoading && (
           <UploadForm onSubmit={handleGenerate} />
         )}
 
-        {isLoading && <LoadingSkeleton />}
+        {isLoading && (
+           <div className="max-w-2xl mx-auto space-y-6">
+             <LoadingSkeleton />
+             
+             {/* Thinking Process Log */}
+             <div className="bg-black/5 dark:bg-white/5 rounded-xl p-6 font-mono text-sm overflow-hidden">
+               <div className="flex items-center gap-2 mb-2 text-[var(--accent)]">
+                 <span className="animate-pulse">●</span>
+                 <span className="font-bold">AI Agent Thinking...</span>
+               </div>
+               <div className="h-48 overflow-y-auto text-[var(--muted)] whitespace-pre-wrap scrollbar-hide text-xs">
+                 {streamLog || "Initializing agent..."}
+               </div>
+             </div>
+           </div>
+        )}
 
         {portfolioData && !isLoading && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <button
-                onClick={handleReset}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                🔄 Create Another Portfolio
-              </button>
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center">
+              <H1 className="text-2xl">Your Portfolio</H1>
+              <Button onClick={handleReset} variant="secondary">Create Another</Button>
             </div>
             <BentoGrid data={portfolioData} />
           </div>
