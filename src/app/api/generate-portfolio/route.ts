@@ -98,6 +98,15 @@ export async function POST(request: NextRequest) {
     // Extract base64 image data
     const imageParts = image.split(',');
     const imageBase64 = imageParts[1] || image;
+
+    // Security: Limit image size (approx 10MB limit for base64 string)
+    if (imageBase64.length > 10 * 1024 * 1024) {
+        return NextResponse.json(
+            { error: "Image too large. Please upload a smaller image." },
+            { status: 413 }
+        );
+    }
+
     const imageMimeType = imageParts[0]?.includes('data:') ?
       imageParts[0].split(':')[1].split(';')[0] : 'image/jpeg';
 

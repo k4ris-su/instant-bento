@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://instant-bento.vercel.app"),
   title: {
     default: "Instant Bento | AI Portfolio Generator",
     template: "%s | Instant Bento",
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Instant Bento | AI Portfolio Generator",
     description: "Generate your professional bento grid portfolio in seconds using AI.",
-    url: "https://instant-bento.vercel.app",
+    url: "https://bentou.k4ris.com",
     siteName: "Instant Bento",
     images: [
       {
