@@ -109,6 +109,31 @@ export async function POST(request: NextRequest) {
 
     **User Input:** "${text}"
 
+    **Few-Shot Examples (Learn from these patterns):**
+
+    *Example 1: Creative Director*
+    - **Goal**: Show artistic flair and philosophy.
+    - **Custom Nodes Strategy**:
+      1. \`Iridescence\` block (colSpan: 2, rowSpan: 2) for visual impact.
+      2. \`SpotlightCard\` (colSpan: 2, rowSpan: 1) for a "Design Philosophy" statement.
+      3. \`CircularText\` (colSpan: 1, rowSpan: 1) saying "Open for Work".
+      4. \`GradientText\` (colSpan: 3, rowSpan: 1) for a large "Awards & Recognition" header.
+
+    *Example 2: Full Stack Developer*
+    - **Goal**: Show technical depth and modern stack.
+    - **Custom Nodes Strategy**:
+      1. \`DecryptedText\` (colSpan: 2, rowSpan: 1) listing complex tech stack keywords.
+      2. \`SpotlightCard\` (colSpan: 2, rowSpan: 2) for a detailed "Recent Project" case study summary.
+      3. \`ShinyText\` (colSpan: 2, rowSpan: 1) for a "Let's Build Together" CTA.
+      4. \`SplitText\` (colSpan: 4, rowSpan: 1) for a punchy mission statement.
+
+    *Example 3: Modern Frontend Engineer*
+    - **Goal**: Show high-end UI/UX capabilities.
+    - **Custom Nodes Strategy**:
+      1. \`TrueFocus\` (colSpan: 4, rowSpan: 1) for a hero statement "Crafting Digital Experiences".
+      2. \`InfiniteScroll\` (colSpan: 4, rowSpan: 1) for a marquee of technologies (React, Next.js, Tailwind, WebGL).
+      3. \`SpotlightCard\` (colSpan: 2, rowSpan: 2) for a featured project.
+
     **Workflow (Strict Order):**
     1.  **Deep Analysis (Thinking Process)**:
         - Analyze the user's potential persona based on the input.
@@ -138,7 +163,31 @@ export async function POST(request: NextRequest) {
             - Use 'SpotlightCard' for feature cards or testimonials (interactive hover effect).
             - Use 'CircularText' for visual flair (e.g., "Scroll Down", "Contact Me", "Open to Work").
             - Use 'Iridescence' for a purely visual, artistic background block (set content to a short word like "ART" or "FLOW").
+            - Use 'InfiniteScroll' for scrolling lists of skills, tools, or clients. REQUIRED: Pass an array of strings in props.items (e.g., props: { items: ["React", "Next.js", "Design"] }).
+            - Use 'TrueFocus' for a high-impact sentence where words blur on hover. Put the sentence in 'content'.
             - **CRITICAL**: Put the main text to display in the 'content' field of the node object.
+        - **HTML Usage (type: 'html')**:
+            - **HIGHLY RECOMMENDED**: Use HTML blocks frequently to add depth and detail that single components can't provide.
+            - **Good Use Cases**:
+                - **Services List**: A grid of 3-4 services with small emoji icons and descriptions.
+                - **Timeline**: A simple vertical list showing career progression (e.g., "2023 - Present: Senior Dev").
+                - **Contact Info**: A clean layout with email, phone, and location.
+                - **Mini-Blog**: A short paragraph sharing a thought or insight.
+            - **Styling Rules (CRITICAL)**:
+                - **NO Backgrounds**: The container already has a glass background. NEVER add `bg-zinc-900`, `bg-black`, or `bg-slate-800` to your HTML.
+                - **NO Borders/Shadows**: The container handles this.
+                - **Typography**: Use `text-white` for headings and `text-zinc-400` for body text. Use `font-mono` for small labels.
+                - **Layout**: Use `flex flex-col gap-2` or `grid grid-cols-2 gap-4` to organize content internally.
+            - **Example Structure**:
+                `
+                <div class="flex flex-col gap-3">
+                  <h3 class="text-lg font-bold text-white">Services</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div><span class="text-xl">🎨</span> <p class="text-sm text-zinc-400">UI Design</p></div>
+                    <div><span class="text-xl">⚡</span> <p class="text-sm text-zinc-400">Performance</p></div>
+                  </div>
+                </div>
+                `
         - **Grid Rules**:
             - Use 'colSpan' 2 or 3 for text-heavy blocks to ensure readability.
             - Use 'rowSpan' 1 for headers/titles.

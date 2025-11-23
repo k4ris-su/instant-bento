@@ -25,11 +25,13 @@ export default function Home() {
   } | null;
 
   const [portfolioData, setPortfolioData] = useState<PortfolioData>(null);
+  const [lastInput, setLastInput] = useState<{ image: File; text: string } | null>(null);
 
   const [streamLog, setStreamLog] = useState<string>("");
 
   const handleGenerate = async (formData: { image: File; text: string }) => {
     console.log("🚀 Starting portfolio generation...");
+    setLastInput(formData);
     setIsLoading(true);
     setStreamLog("");
 
@@ -106,6 +108,12 @@ export default function Home() {
     } catch (error) {
       console.error("Error reading image:", error);
       setIsLoading(false);
+    }
+  };
+
+  const handleRecreate = () => {
+    if (lastInput) {
+      handleGenerate(lastInput);
     }
   };
 
@@ -265,6 +273,7 @@ export default function Home() {
               <H1 className="text-2xl">Your Portfolio</H1>
               <div className="flex gap-2">
                 <Button onClick={handleDownload} variant="secondary">Download HTML</Button>
+                <Button onClick={handleRecreate} variant="secondary">Recreate</Button>
                 <Button onClick={handleReset} variant="secondary">Create Another</Button>
               </div>
             </div>

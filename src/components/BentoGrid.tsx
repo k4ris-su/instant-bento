@@ -13,6 +13,8 @@ import SplitText from "@/components/SplitText";
 import SpotlightCard from "@/components/SpotlightCard";
 import CircularText from "@/components/CircularText";
 import Iridescence from "@/components/Iridescence";
+import { InfiniteScroll } from "@/components/InfiniteScroll";
+import TrueFocus from "@/components/TrueFocus";
 
 interface CustomNode {
   colSpan: number;
@@ -44,8 +46,11 @@ const DynamicComponent = ({ node, safeData }: { node: CustomNode, safeData: { pr
 
   const { component, props, children, content } = node;
 
-  // Helper to get the best available text content
-  const getText = () => children || props?.text || content || "";
+  // Helper to get the best available text content and ensure it's a string
+  const getText = () => {
+    const rawText = children || props?.text || content || "";
+    return String(rawText);
+  };
 
   switch (component) {
     case 'GradientText':
@@ -62,7 +67,7 @@ const DynamicComponent = ({ node, safeData }: { node: CustomNode, safeData: { pr
           <div className="text-5xl font-bold text-white mb-2">
             <CountUp {...props} />
           </div>
-          {(children || content) && <span className="text-zinc-400 text-sm uppercase tracking-widest">{children || content}</span>}
+          {(children || content) && <span className="text-zinc-400 text-sm uppercase tracking-widest">{getText()}</span>}
         </div>
       );
     case 'ShinyText':
@@ -79,7 +84,14 @@ const DynamicComponent = ({ node, safeData }: { node: CustomNode, safeData: { pr
 
       return (
         <div className="h-full w-full flex items-center justify-center overflow-hidden font-sans">
-          <TiltedCard {...props} imageSrc={imageSrc} />
+          <TiltedCard
+            {...props}
+            imageSrc={imageSrc}
+            captionText={props?.captionText ? String(props.captionText) : ""}
+            altText={props?.altText ? String(props.altText) : "Portfolio Image"}
+            containerHeight="100%"
+            containerWidth="100%"
+          />
         </div>
       );
     case 'DecryptedText':
@@ -109,12 +121,36 @@ const DynamicComponent = ({ node, safeData }: { node: CustomNode, safeData: { pr
         </div>
       );
     case 'Iridescence':
+      // Validate color prop to prevent crashes
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let iridescenceColor = (props as any)?.color;
+      if (!Array.isArray(iridescenceColor) || iridescenceColor.length !== 3) {
+         iridescenceColor = [1, 1, 1]; // Default to white if invalid
+      }
+
       return (
-        <div className="h-full w-full relative overflow-hidden font-sans rounded-3xl">
-           <Iridescence {...props} />
+        <div className="h-full w-full relative overflow-hidden font-sans">
+           <Iridescence {...props} color={iridescenceColor} />
            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="text-2xl font-bold text-white mix-blend-overlay tracking-tighter">{getText()}</span>
            </div>
+        </div>
+      );
+    case 'InfiniteScroll':
+      // Ensure items is an array of strings
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const scrollItems = (props as any)?.items;
+      const validItems = Array.isArray(scrollItems) ? scrollItems.map(String) : ["Item 1", "Item 2", "Item 3"];
+
+      return (
+        <div className="h-full w-full flex items-center justify-center overflow-hidden font-sans">
+           <InfiniteScroll items={validItems} {...props} />
+        </div>
+      );
+    case 'TrueFocus':
+      return (
+        <div className="h-full w-full flex items-center justify-center p-6 font-sans">
+           <TrueFocus sentence={getText() || "True Focus"} {...props} />
         </div>
       );
     default:
@@ -201,13 +237,13 @@ export function BentoGrid({ data }: BentoGridProps) {
 
       {/* Stats - Vertical Stack */}
       <motion.div variants={item} className="col-span-1 md:col-span-2 lg:col-span-2 row-span-2 flex flex-col gap-4">
-        <BentoCard className="flex-1 flex flex-col justify-center items-center p-6 bg-[var(--foreground)] text-[var(--background)]" translucent={true}>
+        <BentoCard className="flex-1 flex flex-col justify-center items-center p-6 bg-zinc-100 text-zinc-900" translucent={false}>
           <span className="text-5xl font-bold mb-1 font-mono">{safeData.stats[0]?.value || "1+"}</span>
-          <span className="text-sm opacity-80 uppercase tracking-wider font-mono">{safeData.stats[0]?.label || "Years"}</span>
+          <span className="text-sm font-medium opacity-80 uppercase tracking-wider font-mono">{safeData.stats[0]?.label || "Years"}</span>
         </BentoCard>
         <BentoCard className="flex-1 flex flex-col justify-center items-center p-6" translucent={true}>
           <span className="text-5xl font-bold mb-1 text-[var(--accent)] font-mono">{safeData.stats[1]?.value || "10+"}</span>
-          <span className="text-sm text-[var(--muted)] uppercase tracking-wider font-mono">{safeData.stats[1]?.label || "Projects"}</span>
+          <span className="text-sm text-zinc-400 uppercase tracking-wider font-mono">{safeData.stats[1]?.label || "Projects"}</span>
         </BentoCard>
       </motion.div>
 
@@ -268,7 +304,30 @@ export function BentoGrid({ data }: BentoGridProps) {
       </motion.div>
 
       {/* Custom HTML Nodes from AI - These are the stars of the show */}
-      {safeData.customNodes.map((node, index) => (
+      {safeData.customNodes.map((node, index) => {
+        // Determine if we should remove the default card styling for full-bleed visual components
+        const isVisualComponent = node.type === 'react-component' &&
+          ['Iridescence', 'TiltedCard', 'SpotlightCard'].includes(node.component || '');
+
+        if (isVisualComponent) {
+             return (
+                <motion.div
+                  key={`custom-${index}`}
+                  variants={item}
+                  className={`
+                    col-span-1
+                    md:col-span-${Math.min(node.colSpan, 4)}
+                    lg:col-span-${Math.min(node.colSpan, 6)}
+                    row-span-${node.rowSpan}
+                    relative rounded-sm overflow-hidden h-full w-full transition-all duration-500 hover:scale-[1.01]
+                  `}
+                >
+                   <DynamicComponent node={node} safeData={safeData} />
+                </motion.div>
+             )
+        }
+
+        return (
         <motion.div
           key={`custom-${index}`}
           variants={item}
@@ -279,10 +338,14 @@ export function BentoGrid({ data }: BentoGridProps) {
             row-span-${node.rowSpan}
           `}
         >
-          <BentoCard className="h-full overflow-hidden" noPadding={true} translucent={true}>
+          <BentoCard
+            className="h-full overflow-hidden"
+            noPadding={true}
+            translucent={true}
+          >
             {node.type === 'html' ? (
                <div
-                 className="h-full w-full"
+                 className="h-full w-full p-6 md:p-8"
                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(node.content) }}
                />
             ) : node.type === 'react-component' ? (
@@ -294,7 +357,7 @@ export function BentoGrid({ data }: BentoGridProps) {
             )}
           </BentoCard>
         </motion.div>
-      ))}
+      )})}
     </motion.div>
   );
 }
