@@ -19,7 +19,7 @@ const StreamLogViewer = memo(({ log }: StreamLogViewerProps) => {
         <span className="animate-pulse">●</span>
         <span className="font-bold">AI Agent Thinking...</span>
       </div>
-      <div 
+      <div
         ref={scrollRef}
         className="h-full overflow-y-auto text-zinc-500 whitespace-pre-wrap scrollbar-hide text-xs pb-8"
       >
