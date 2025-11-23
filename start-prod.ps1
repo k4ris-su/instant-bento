@@ -1,6 +1,7 @@
 # Kill process on port 3000
 Write-Host "Stopping any process on port 3000..."
 npx --yes kill-port 3000
+Start-Sleep -Seconds 2
 
 # Install dependencies
 Write-Host "Installing dependencies..."

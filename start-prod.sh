@@ -2,7 +2,12 @@
 
 # Kill process on port 3000
 echo "Stopping any process on port 3000..."
+# Try aggressive kill first
+if command -v fuser &> /dev/null; then
+    fuser -k 3000/tcp
+fi
 npx --yes kill-port 3000
+sleep 2
 
 # Install dependencies
 echo "Installing dependencies..."
