@@ -237,13 +237,20 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
+        console.log("⚡ Stream started");
 
         try {
           for await (const chunk of response) {
             // 1. Handle Text (Thinking/Reasoning)
-            const chunkText = chunk.text;
-            if (chunkText) {
-              controller.enqueue(encoder.encode(JSON.stringify({ type: 'chunk', content: chunkText }) + "\n"));
+            try {
+              const chunkText = chunk.text;
+              if (chunkText) {
+                // console.log("📝 Text chunk:", chunkText.substring(0, 20) + "...");
+                controller.enqueue(encoder.encode(JSON.stringify({ type: 'chunk', content: chunkText }) + "\n"));
+              }
+            } catch (e) {
+              // Ignore error if text is not available (e.g. pure function call)
+              void e;
             }
 
             // 2. Handle Function Calls
@@ -257,16 +264,14 @@ export async function POST(request: NextRequest) {
                   controller.enqueue(encoder.encode(JSON.stringify({ type: 'data', content: args }) + "\n"));
                 }
               }
-            } else {
-               // Debug: Log if we expected a function call but didn't get one in this chunk
-               // console.log("Chunk received without function call:", chunkText ? "Text chunk" : "Empty chunk");
             }
           }
 
         } catch (error) {
           console.error("Stream error:", error);
-          controller.enqueue(encoder.encode(JSON.stringify({ type: 'chunk', content: "\n❌ Error during generation." }) + "\n"));
+          controller.enqueue(encoder.encode(JSON.stringify({ type: 'chunk', content: "\n❌ Error during generation: " + (error as Error).message }) + "\n"));
         } finally {
+          console.log("🏁 Stream closed");
           controller.close();
         }
       }

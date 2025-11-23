@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { BentoCard } from "@/components/BentoCard";
@@ -39,6 +40,28 @@ interface BentoGridProps {
     colorTheme: string;
   };
 }
+
+const SanitizedHTML = ({ content }: { content: string }) => {
+  const [sanitized, setSanitized] = useState("");
+
+  useEffect(() => {
+    // Handle DOMPurify import structure
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const domPurifyLib = DOMPurify as any;
+    // Check if we have a default export or the library itself
+    const sanitizerFactory = domPurifyLib.default ? domPurifyLib.default : domPurifyLib;
+
+    // If it's a factory function (common in some builds), initialize it with window
+    // Otherwise use it directly
+    const clean = typeof sanitizerFactory === 'function' ? sanitizerFactory(window) : sanitizerFactory;
+
+    if (clean && typeof clean.sanitize === 'function') {
+      setSanitized(clean.sanitize(content));
+    }
+  }, [content]);
+
+  return <div className="h-full w-full p-6 md:p-8" dangerouslySetInnerHTML={{ __html: sanitized }} />;
+};
 
 // Dynamic Component Renderer
 const DynamicComponent = ({ node, safeData }: { node: CustomNode, safeData: { processedImage: string } }) => {
@@ -344,10 +367,7 @@ export function BentoGrid({ data }: BentoGridProps) {
             translucent={true}
           >
             {node.type === 'html' ? (
-               <div
-                 className="h-full w-full p-6 md:p-8"
-                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(node.content) }}
-               />
+               <SanitizedHTML content={node.content} />
             ) : node.type === 'react-component' ? (
                <DynamicComponent node={node} safeData={safeData} />
             ) : (

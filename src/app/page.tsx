@@ -11,11 +11,15 @@ import DecryptedText from "@/components/DecryptedText";
 import SplitText from "@/components/SplitText";
 import { BackgroundLayer, BACKGROUNDS } from "@/components/BackgroundLayer";
 import StreamLogViewer from "@/components/StreamLogViewer";
+import imageCompression from 'browser-image-compression';
+import { ShareDialog } from "@/components/ShareDialog";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [backgroundComponent, setBackgroundComponent] = useState<any>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
     // Set the default background (Dark Veil)
@@ -46,9 +50,23 @@ export default function Home() {
     setStreamLog("");
 
     try {
+      // Compress image before sending
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true
+      };
+
+      let imageFile = formData.image;
+      try {
+        imageFile = await imageCompression(formData.image, options);
+      } catch (error) {
+        console.warn("Image compression failed, using original", error);
+      }
+
       // Convert image to base64
       const reader = new FileReader();
-      reader.readAsDataURL(formData.image);
+      reader.readAsDataURL(imageFile);
 
       reader.onloadend = async () => {
         const base64Image = reader.result as string;
@@ -234,6 +252,63 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const handleShare = async () => {
+    if (!portfolioData) return;
+
+    const toastId = toast.loading("Compressing & Saving...");
+
+    try {
+        let finalImage = portfolioData.processedImage;
+
+        // Compress if it's a base64 string
+        if (finalImage.startsWith('data:image')) {
+            try {
+                // Convert Base64 to Blob
+                const res = await fetch(finalImage);
+                const blob = await res.blob();
+
+                // Compress
+                const options = {
+                    maxSizeMB: 0.5, // Max 0.5MB
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true
+                };
+                const file = new File([blob], "image.png", { type: blob.type });
+                const compressedBlob = await imageCompression(file, options);
+
+                // Convert back to Base64
+                const reader = new FileReader();
+                finalImage = await new Promise<string>((resolve) => {
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(compressedBlob);
+                });
+            } catch (e) {
+                console.warn("Compression failed, using original image", e);
+            }
+        }
+
+        const response = await fetch('/api/share', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                portfolioData: { ...portfolioData, processedImage: finalImage }
+            })
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+
+        const { shortId } = await response.json();
+        const url = `${window.location.origin}/p/${shortId}`;
+
+        setShareUrl(url);
+        setShareDialogOpen(true);
+        toast.success("Portfolio ready to share!", { id: toastId });
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to share portfolio", { id: toastId });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black relative overflow-hidden font-mono selection:bg-[#32f08c] selection:text-black">
       {/* Background Effect */}
@@ -301,6 +376,9 @@ export default function Home() {
                 <H1 className="text-2xl font-mono uppercase tracking-widest text-white">System_Output: Portfolio_Generated</H1>
               </div>
               <div className="flex gap-3">
+                <Button onClick={handleShare} variant="secondary" className="font-mono text-xs uppercase tracking-wider hover:bg-[#32f08c] hover:text-black transition-colors">
+                  [ Share ]
+                </Button>
                 <Button onClick={handleDownload} variant="secondary" className="font-mono text-xs uppercase tracking-wider hover:bg-[#32f08c] hover:text-black transition-colors">
                   [ Download HTML ]
                 </Button>
@@ -361,6 +439,12 @@ export default function Home() {
           </footer>
         )}
       </div>
+
+      <ShareDialog
+        isOpen={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        url={shareUrl}
+      />
     </div>
   );
 }
