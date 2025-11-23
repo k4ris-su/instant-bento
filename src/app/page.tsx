@@ -70,86 +70,102 @@ export default function Home() {
 
       reader.onloadend = async () => {
         const base64Image = reader.result as string;
+        let retryCount = 0;
+        const maxRetries = 3;
 
-        try {
-          const response = await fetch("/api/generate-portfolio", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64Image, text: formData.text }),
-          });
+        while (retryCount < maxRetries) {
+          try {
+            if (retryCount > 0) {
+               setStreamLog(prev => prev + `\n\n🔄 Retry attempt ${retryCount}/${maxRetries}...\n`);
+               await new Promise(r => setTimeout(r, 2000));
+            }
 
-          if (!response.ok) throw new Error(`API Error: ${response.status}`);
-          if (!response.body) throw new Error("No response body");
+            const response = await fetch("/api/generate-portfolio", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: base64Image, text: formData.text }),
+            });
 
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let finalImage = "";
-          let buffer = "";
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            if (!response.body) throw new Error("No response body");
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let finalImage = "";
+            let buffer = "";
+            let hasReceivedData = false;
 
-            // Append new chunk to buffer
-            buffer += decoder.decode(value, { stream: true });
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            // Process complete lines
-            const lines = buffer.split("\n");
+              // Append new chunk to buffer
+              buffer += decoder.decode(value, { stream: true });
 
-            // Keep the last potentially incomplete line in the buffer
-            buffer = lines.pop() || "";
+              // Process complete lines
+              const lines = buffer.split("\n");
 
-            for (const line of lines) {
-              if (!line.trim()) continue;
+              // Keep the last potentially incomplete line in the buffer
+              buffer = lines.pop() || "";
+
+              for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                  const data = JSON.parse(line);
+                  if (data.type === 'chunk') {
+                    setStreamLog(prev => prev + data.content);
+                  } else if (data.type === 'data') {
+                    hasReceivedData = true;
+                    setPortfolioData({
+                      ...data.content,
+                      processedImage: finalImage || base64Image
+                    });
+                  } else if (data.type === 'image') {
+                    finalImage = data.content;
+                  }
+                } catch (e) {
+                  console.warn("Error parsing stream chunk", e);
+                }
+              }
+            }
+
+            // Process any remaining buffer
+            if (buffer.trim()) {
               try {
-                const data = JSON.parse(line);
+                const data = JSON.parse(buffer);
                 if (data.type === 'chunk') {
                   setStreamLog(prev => prev + data.content);
                 } else if (data.type === 'data') {
+                  hasReceivedData = true;
                   setPortfolioData({
                     ...data.content,
                     processedImage: finalImage || base64Image
                   });
-                } else if (data.type === 'image') {
-                  finalImage = data.content;
                 }
               } catch (e) {
-                console.warn("Error parsing stream chunk", e);
+                console.warn("Error parsing final buffer", e);
               }
             }
-          }
 
-          // Process any remaining buffer
-          if (buffer.trim()) {
-            try {
-              const data = JSON.parse(buffer);
-              if (data.type === 'chunk') {
-                setStreamLog(prev => prev + data.content);
-              } else if (data.type === 'data') {
-                setPortfolioData({
-                  ...data.content,
-                  processedImage: finalImage || base64Image
-                });
-              }
-            } catch (e) {
-              console.warn("Error parsing final buffer", e);
+            // If we finished the stream but didn't get data, treat as error to trigger retry
+            if (!hasReceivedData && !portfolioData) {
+                throw new Error("Stream finished but no portfolio data received");
+            }
+
+            // Success!
+            setIsLoading(false);
+            break;
+
+          } catch (error) {
+            console.error(`Generation attempt ${retryCount + 1} failed:`, error);
+            retryCount++;
+
+            if (retryCount >= maxRetries) {
+              setStreamLog(prev => prev + "\n\n❌ Error: " + (error as Error).message);
+              toast.error("Generation failed after multiple attempts. See logs.");
+              setIsLoading(false);
             }
           }
-
-          // Check if we actually got data
-          if (!portfolioData && !buffer.includes('"type":"data"')) {
-             // We can't easily check portfolioData state here because of closure,
-             // but we can check if we processed a data packet.
-             // Better: let's rely on the state update.
-             // If we reach here and didn't get data, we should probably warn.
-          }
-
-        } catch (error) {
-          console.error("Generation failed:", error);
-          setStreamLog(prev => prev + "\n\n❌ Error: " + (error as Error).message);
-          toast.error("Generation failed. See logs for details.");
-        } finally {
-          setIsLoading(false);
         }
       };
 

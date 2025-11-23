@@ -207,31 +207,47 @@ export async function POST(request: NextRequest) {
     - **Image**: The main image source is the literal string "processedImage".
     `;
 
-    const response = await ai.models.generateContentStream({
-      model: "gemini-flash-latest",
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: textPrompt },
+    // Retry mechanism for AI generation
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let response: any;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        response = await ai.models.generateContentStream({
+          model: "gemini-flash-latest",
+          contents: [
             {
-              inlineData: {
-                mimeType: imageMimeType,
-                data: imageBase64
+              role: 'user',
+              parts: [
+                { text: textPrompt },
+                {
+                  inlineData: {
+                    mimeType: imageMimeType,
+                    data: imageBase64
+                  }
+                }
+              ]
+            }
+          ],
+          config: {
+            tools: [{ functionDeclarations: [generatePortfolioTool] }],
+            toolConfig: {
+              functionCallingConfig: {
+                mode: FunctionCallingConfigMode.AUTO,
               }
             }
-          ]
-        }
-      ],
-      config: {
-        tools: [{ functionDeclarations: [generatePortfolioTool] }],
-        toolConfig: {
-          functionCallingConfig: {
-            mode: FunctionCallingConfigMode.AUTO,
           }
-        }
+        });
+        break; // Success
+      } catch (error) {
+        retryCount++;
+        console.error(`⚠️ AI Generation Attempt ${retryCount} failed:`, error);
+        if (retryCount >= maxRetries) throw error;
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Backoff
       }
-    });
+    }
 
     // Create a ReadableStream to send updates to the client
     const stream = new ReadableStream({
