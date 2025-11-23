@@ -4,6 +4,14 @@
 echo "Stopping any process on port 3000..."
 npx --yes kill-port 3000
 
+# Install dependencies
+echo "Installing dependencies..."
+pnpm install
+
+# Clean previous build cache
+echo "Cleaning previous build cache..."
+rm -rf .next
+
 # Build the project
 echo "Building the project..."
 if pnpm build; then

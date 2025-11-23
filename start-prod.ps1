@@ -2,6 +2,16 @@
 Write-Host "Stopping any process on port 3000..."
 npx --yes kill-port 3000
 
+# Install dependencies
+Write-Host "Installing dependencies..."
+& pnpm install
+
+# Clean previous build cache
+Write-Host "Cleaning previous build cache..."
+if (Test-Path ".next") {
+    Remove-Item -Path ".next" -Recurse -Force
+}
+
 # Build the project
 Write-Host "Building the project..."
 & pnpm build
