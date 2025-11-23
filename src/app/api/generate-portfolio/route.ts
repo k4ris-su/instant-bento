@@ -174,12 +174,12 @@ export async function POST(request: NextRequest) {
                 - **Contact Info**: A clean layout with email, phone, and location.
                 - **Mini-Blog**: A short paragraph sharing a thought or insight.
             - **Styling Rules (CRITICAL)**:
-                - **NO Backgrounds**: The container already has a glass background. NEVER add `bg-zinc-900`, `bg-black`, or `bg-slate-800` to your HTML.
+                - **NO Backgrounds**: The container already has a glass background. Do NOT add background classes (e.g., bg-zinc-900, bg-black) to your HTML.
                 - **NO Borders/Shadows**: The container handles this.
-                - **Typography**: Use `text-white` for headings and `text-zinc-400` for body text. Use `font-mono` for small labels.
-                - **Layout**: Use `flex flex-col gap-2` or `grid grid-cols-2 gap-4` to organize content internally.
+                - **Typography**: Use 'text-white' for headings and 'text-zinc-400' for body text. Use 'font-mono' for small labels.
+                - **Layout**: Use 'flex flex-col gap-2' or 'grid grid-cols-2 gap-4' to organize content internally.
             - **Example Structure**:
-                `
+
                 <div class="flex flex-col gap-3">
                   <h3 class="text-lg font-bold text-white">Services</h3>
                   <div class="grid grid-cols-2 gap-4">
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
                     <div><span class="text-xl">⚡</span> <p class="text-sm text-zinc-400">Performance</p></div>
                   </div>
                 </div>
-                `
+
         - **Grid Rules**:
             - Use 'colSpan' 2 or 3 for text-heavy blocks to ensure readability.
             - Use 'rowSpan' 1 for headers/titles.

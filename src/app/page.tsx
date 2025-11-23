@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UploadForm } from "@/components/UploadForm";
 import { BentoGrid } from "@/components/BentoGrid";
 import { H1 } from "@/components/ui/Typography";
 import { Button } from "@/components/ui/Button";
-import PixelBlast from "@/components/PixelBlast";
 import LetterGlitch from "@/components/LetterGlitch";
 import DecryptedText from "@/components/DecryptedText";
 import SplitText from "@/components/SplitText";
+import { BackgroundLayer, BACKGROUNDS } from "@/components/BackgroundLayer";
+import StreamLogViewer from "@/components/StreamLogViewer";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [backgroundComponent, setBackgroundComponent] = useState<any>(null);
+
+  useEffect(() => {
+    // Randomly select a background on mount
+    const randomBg = BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
+    setBackgroundComponent(randomBg);
+  }, []);
+
   type PortfolioData = {
     name: string;
     title: string;
@@ -207,9 +217,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[var(--background)] relative overflow-hidden">
       {/* Background Effect */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <PixelBlast color="#32f08c" pixelSize={30} />
-      </div>
+      <BackgroundLayer backgroundComponent={backgroundComponent} />
 
       <div className="container-modern py-12 relative z-10">
         <header className="mb-10 text-center md:text-left">
@@ -254,15 +262,7 @@ export default function Home() {
                </div>
 
                {/* Thinking Process Log */}
-               <div className="bg-black/50 rounded-sm p-6 font-mono text-sm overflow-hidden border border-white/5 h-64">
-                 <div className="flex items-center gap-2 mb-2 text-green-400">
-                   <span className="animate-pulse">●</span>
-                   <span className="font-bold">AI Agent Thinking...</span>
-                 </div>
-                 <div className="h-full overflow-y-auto text-zinc-500 whitespace-pre-wrap scrollbar-hide text-xs pb-8">
-                   {streamLog || "Initializing agent..."}
-                 </div>
-               </div>
+               <StreamLogViewer log={streamLog} />
              </div>
            </div>
         )}
