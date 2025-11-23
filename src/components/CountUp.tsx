@@ -2,7 +2,7 @@ import { useInView, useMotionValue, useSpring } from 'motion/react';
 import { useCallback, useEffect, useRef } from 'react';
 
 interface CountUpProps {
-  to: number;
+  to?: number;
   from?: number;
   direction?: 'up' | 'down';
   delay?: number;

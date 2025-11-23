@@ -78,9 +78,9 @@ const DynamicComponent = ({ node, safeData }: { node: CustomNode, safeData: { pr
       );
     case 'TiltedCard':
        // Fix: Use processedImage if the AI suggests it or if missing
-       const imageSrc = props?.imageSrc === 'processedImage' || !props?.imageSrc
+       const imageSrc = (props?.imageSrc === 'processedImage' || !props?.imageSrc)
          ? safeData.processedImage
-         : props.imageSrc;
+         : String(props.imageSrc);
 
       return (
         <div className="h-full w-full flex items-center justify-center overflow-hidden font-sans">
