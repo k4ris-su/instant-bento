@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
 import { UploadForm } from "@/components/UploadForm";
 import { BentoGrid } from "@/components/BentoGrid";
 import { H1 } from "@/components/ui/Typography";
@@ -83,15 +85,11 @@ export default function Home() {
 
             for (const line of lines) {
               if (!line.trim()) continue;
-
               try {
                 const data = JSON.parse(line);
-
                 if (data.type === 'chunk') {
-                  // Agent thinking / logs
                   setStreamLog(prev => prev + data.content);
                 } else if (data.type === 'data') {
-                  // Final structured data from Function Call
                   setPortfolioData({
                     ...data.content,
                     processedImage: finalImage || base64Image
@@ -105,11 +103,35 @@ export default function Home() {
             }
           }
 
-          // We no longer need to manually parse JSON from accumulatedText
-          // because the API will send a structured 'data' event.
+          // Process any remaining buffer
+          if (buffer.trim()) {
+            try {
+              const data = JSON.parse(buffer);
+              if (data.type === 'chunk') {
+                setStreamLog(prev => prev + data.content);
+              } else if (data.type === 'data') {
+                setPortfolioData({
+                  ...data.content,
+                  processedImage: finalImage || base64Image
+                });
+              }
+            } catch (e) {
+              console.warn("Error parsing final buffer", e);
+            }
+          }
+
+          // Check if we actually got data
+          if (!portfolioData && !buffer.includes('"type":"data"')) {
+             // We can't easily check portfolioData state here because of closure,
+             // but we can check if we processed a data packet.
+             // Better: let's rely on the state update.
+             // If we reach here and didn't get data, we should probably warn.
+          }
+
         } catch (error) {
           console.error("Generation failed:", error);
           setStreamLog(prev => prev + "\n\n❌ Error: " + (error as Error).message);
+          toast.error("Generation failed. See logs for details.");
         } finally {
           setIsLoading(false);
         }
@@ -243,8 +265,8 @@ export default function Home() {
         )}
 
         {isLoading && (
-           <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
-             <div className="absolute inset-0 opacity-30">
+           <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center">
+             <div className="absolute inset-0 opacity-30 pointer-events-none">
                 <LetterGlitch
                   glitchColors={['#32f08c', '#ffffff', '#000000']}
                   glitchSpeed={50}
@@ -255,10 +277,14 @@ export default function Home() {
                 />
              </div>
 
-             <div className="relative z-10 max-w-2xl w-full p-8 space-y-6 bg-black/40 backdrop-blur-xl rounded-sm border border-white/10">
+             <div className="relative z-10 max-w-2xl w-full p-8 space-y-6">
                <div className="text-center space-y-2">
-                 <h2 className="text-3xl font-bold text-white animate-pulse font-mono">Generating Portfolio...</h2>
-                 <p className="text-zinc-400 font-mono text-sm">Analyzing your profile and designing your bento grid.</p>
+                 <h2 className="text-3xl font-bold text-white animate-pulse font-mono">
+                   <span className="text-[#32f08c] mr-2">{`>`}</span>
+                   GENERATING_PORTFOLIO
+                   <span className="animate-blink">_</span>
+                 </h2>
+                 <p className="text-zinc-400 font-mono text-sm uppercase tracking-widest">Analyzing profile data...</p>
                </div>
 
                {/* Thinking Process Log */}
@@ -280,6 +306,27 @@ export default function Home() {
             <BentoGrid data={portfolioData} />
           </div>
         )}
+
+        <footer className="mt-20 border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-center gap-4 text-zinc-500 font-mono text-sm text-center">
+          <div className="flex flex-col md:flex-row items-center gap-2">
+            <span className="text-xl">🥉</span>
+            <span className="font-semibold text-zinc-400">3rd Prize Winner</span>
+            <span className="hidden md:inline text-zinc-700 mx-2">|</span>
+            <span>TRAE Meetup & Vibe Coding Experience @ Vietnam</span>
+          </div>
+          <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity mt-2 md:mt-0 md:ml-4">
+            <span>Powered by</span>
+            <Image
+              src="https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/trae-color.png"
+              alt="Trae Logo"
+              width={20}
+              height={20}
+              className="h-5 w-5 object-contain"
+              unoptimized
+            />
+            <span className="font-bold text-zinc-300">Trae</span>
+          </div>
+        </footer>
       </div>
     </div>
   );

@@ -251,6 +251,9 @@ export async function POST(request: NextRequest) {
                   controller.enqueue(encoder.encode(JSON.stringify({ type: 'data', content: args }) + "\n"));
                 }
               }
+            } else {
+               // Debug: Log if we expected a function call but didn't get one in this chunk
+               // console.log("Chunk received without function call:", chunkText ? "Text chunk" : "Empty chunk");
             }
           }
 

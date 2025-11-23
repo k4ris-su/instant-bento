@@ -208,26 +208,29 @@ export function BentoGrid({ data }: BentoGridProps) {
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
             {/* Gradient Overlay - Fades image into the UI at the bottom/left */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/50 to-transparent opacity-90" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[var(--background)] via-transparent to-transparent opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent opacity-80" />
+
+            {/* Scanline effect */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 pointer-events-none bg-[length:100%_4px,3px_100%]" />
           </div>
 
           {/* Content - Floating on top */}
-          <div className="relative z-10 h-full flex flex-col justify-end p-8 md:p-10">
+          <div className="relative z-20 h-full flex flex-col justify-end p-8 md:p-10">
             <div className="space-y-4 max-w-2xl">
               <div
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-sm bg-white/10 backdrop-blur-md border border-white/10 text-xs font-medium text-[var(--foreground)] w-fit font-mono"
+                className="inline-flex items-center gap-2 px-3 py-1 bg-[#32f08c]/10 border border-[#32f08c]/20 text-xs font-medium text-[#32f08c] w-fit font-mono uppercase tracking-wider"
               >
-                <span className="w-2 h-2 rounded-none bg-green-500 animate-pulse" />
+                <span className="w-2 h-2 bg-[#32f08c] animate-pulse" />
                 Open to opportunities
               </div>
 
-              <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-[var(--foreground)] leading-[0.9]">
+              <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white leading-[0.9]">
                 {safeData.name}
               </h1>
 
-              <p className="text-xl md:text-2xl text-[var(--muted)] font-medium tracking-tight flex items-center gap-3 font-mono">
-                <span className="w-8 h-1 rounded-none" style={{ backgroundColor: safeData.colorTheme }} />
+              <p className="text-xl md:text-2xl text-zinc-400 font-medium tracking-tight flex items-center gap-3 font-mono">
+                <span className="w-8 h-1 bg-[#32f08c]" />
                 {safeData.title}
               </p>
             </div>
@@ -237,24 +240,24 @@ export function BentoGrid({ data }: BentoGridProps) {
 
       {/* Stats - Vertical Stack */}
       <motion.div variants={item} className="col-span-1 md:col-span-2 lg:col-span-2 row-span-2 flex flex-col gap-4">
-        <BentoCard className="flex-1 flex flex-col justify-center items-center p-6 bg-zinc-100 text-zinc-900" translucent={false}>
-          <span className="text-5xl font-bold mb-1 font-mono">{safeData.stats[0]?.value || "1+"}</span>
-          <span className="text-sm font-medium opacity-80 uppercase tracking-wider font-mono">{safeData.stats[0]?.label || "Years"}</span>
+        <BentoCard className="flex-1 flex flex-col justify-center items-center p-6 bg-black/40 text-white" translucent={false}>
+          <span className="text-5xl font-bold mb-1 font-mono text-[#32f08c]">{safeData.stats[0]?.value || "1+"}</span>
+          <span className="text-sm font-medium opacity-80 uppercase tracking-wider font-mono text-zinc-500">{safeData.stats[0]?.label || "Years"}</span>
         </BentoCard>
         <BentoCard className="flex-1 flex flex-col justify-center items-center p-6" translucent={true}>
-          <span className="text-5xl font-bold mb-1 text-[var(--accent)] font-mono">{safeData.stats[1]?.value || "10+"}</span>
-          <span className="text-sm text-zinc-400 uppercase tracking-wider font-mono">{safeData.stats[1]?.label || "Projects"}</span>
+          <span className="text-5xl font-bold mb-1 text-white font-mono">{safeData.stats[1]?.value || "10+"}</span>
+          <span className="text-sm text-zinc-500 uppercase tracking-wider font-mono">{safeData.stats[1]?.label || "Projects"}</span>
         </BentoCard>
       </motion.div>
 
       {/* Bio Card */}
       <motion.div variants={item} className="col-span-1 md:col-span-2 lg:col-span-3 row-span-1">
         <BentoCard className="h-full p-8 flex flex-col justify-center" translucent={true}>
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 font-mono">
-            <span className="w-1 h-6 rounded-none" style={{ backgroundColor: safeData.colorTheme }} />
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 font-mono text-[#32f08c]">
+            <span className="w-1 h-6 bg-[#32f08c]" />
             About
           </h3>
-          <p className="text-lg leading-relaxed text-[var(--muted)]">
+          <p className="text-lg leading-relaxed text-zinc-400 font-mono text-sm">
             {safeData.bio}
           </p>
         </BentoCard>
@@ -263,7 +266,7 @@ export function BentoGrid({ data }: BentoGridProps) {
       {/* Socials */}
       <motion.div variants={item} className="col-span-1 md:col-span-2 lg:col-span-3 row-span-1">
          <BentoCard className="h-full p-6 flex flex-col justify-center" translucent={true}>
-          <h3 className="text-sm font-medium text-[var(--muted)] mb-4 uppercase tracking-wider font-mono">Connect</h3>
+          <h3 className="text-sm font-medium text-zinc-500 mb-4 uppercase tracking-wider font-mono">Connect</h3>
           <div className="flex flex-wrap gap-3">
             {safeData.socials.map((social, index) => (
               <a
@@ -271,10 +274,10 @@ export function BentoGrid({ data }: BentoGridProps) {
                 href={social.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-sm hover:border-[var(--accent)] transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-md"
+                className="group flex items-center gap-2 px-5 py-3 bg-black/40 border border-white/10 hover:border-[#32f08c] transition-all duration-300 hover:-translate-y-1"
               >
-                <span className="font-medium group-hover:text-[var(--accent)] font-mono text-sm">{social.platform}</span>
-                <svg className="w-4 h-4 text-[var(--muted)] group-hover:text-[var(--accent)] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span className="font-medium text-zinc-400 group-hover:text-[#32f08c] font-mono text-sm uppercase">{social.platform}</span>
+                <svg className="w-4 h-4 text-zinc-600 group-hover:text-[#32f08c] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </a>
@@ -286,15 +289,12 @@ export function BentoGrid({ data }: BentoGridProps) {
       {/* Skills - Masonry-ish */}
       <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-6 row-span-auto">
         <BentoCard className="h-full p-8" translucent={true}>
-          <h3 className="text-lg font-semibold mb-6 font-mono">Expertise</h3>
+          <h3 className="text-lg font-semibold mb-6 font-mono text-white">Expertise</h3>
           <div className="flex flex-wrap gap-2">
             {safeData.skills.map((skill, index) => (
               <div
                 key={index}
-                className="px-4 py-2 bg-white/5 border border-white/10 rounded-sm text-sm font-medium shadow-sm hover:scale-105 transition-transform cursor-default font-mono"
-                style={{
-                  borderLeft: index % 3 === 0 ? `2px solid ${safeData.colorTheme}` : undefined
-                }}
+                className="px-4 py-2 bg-[#32f08c]/5 border border-[#32f08c]/20 text-[#32f08c] text-xs font-mono uppercase tracking-wider hover:bg-[#32f08c]/10 transition-colors cursor-default"
               >
                 {skill}
               </div>
