@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import SpotlightCard from "./SpotlightCard";
 
 interface BentoCardProps {
   className?: string;
@@ -9,18 +10,18 @@ interface BentoCardProps {
   translucent?: boolean;
 }
 
-export function BentoCard({ 
-  className, 
-  children, 
-  colSpan = 1, 
+export function BentoCard({
+  className,
+  children,
+  colSpan = 1,
   rowSpan = 1,
   noPadding = false,
   translucent = false
 }: BentoCardProps) {
   return (
-    <div
+    <SpotlightCard
       className={cn(
-        "rounded-3xl transition-all duration-500 hover:scale-[1.01] relative overflow-hidden",
+        "rounded-3xl transition-all duration-500 hover:scale-[1.01] relative overflow-hidden h-full",
         // Default styles unless translucent
         !translucent && "bg-[var(--card)] border border-[var(--border)] shadow-sm hover:shadow-xl",
         // Translucent style for glassmorphism
@@ -32,8 +33,9 @@ export function BentoCard({
         rowSpan > 1 && `row-span-${rowSpan}`,
         className
       )}
+      spotlightColor="rgba(255, 255, 255, 0.1)"
     >
       {children}
-    </div>
+    </SpotlightCard>
   );
 }

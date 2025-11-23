@@ -3,12 +3,22 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { BentoCard } from "@/components/BentoCard";
+import DOMPurify from "dompurify";
+import GradientText from "@/components/GradientText";
+import CountUp from "@/components/CountUp";
+import ShinyText from "@/components/ShinyText";
+import TiltedCard from "@/components/TiltedCard";
+import DecryptedText from "@/components/DecryptedText";
+import SplitText from "@/components/SplitText";
 
 interface CustomNode {
   colSpan: number;
   rowSpan: number;
-  type: "html" | "text" | "stat";
-  content: string;
+  type: "html" | "text" | "stat" | "react-component";
+  content: string; // For HTML/Text
+  component?: string; // For react-component
+  props?: any; // For react-component
+  children?: any; // For react-component
 }
 
 interface BentoGridProps {
@@ -24,6 +34,59 @@ interface BentoGridProps {
     colorTheme: string;
   };
 }
+
+// Dynamic Component Renderer
+const DynamicComponent = ({ node }: { node: CustomNode }) => {
+  if (node.type !== 'react-component' || !node.component) return null;
+
+  const { component, props, children } = node;
+
+  switch (component) {
+    case 'GradientText':
+      return (
+        <div className="h-full w-full flex items-center justify-center p-6 bg-zinc-900/50">
+          <GradientText {...props}>
+            {children || props.text || "Gradient Text"}
+          </GradientText>
+        </div>
+      );
+    case 'CountUp':
+      return (
+        <div className="h-full w-full flex flex-col items-center justify-center p-6 bg-zinc-900/50">
+          <div className="text-5xl font-bold text-white mb-2">
+            <CountUp {...props} />
+          </div>
+          {children && <span className="text-zinc-400 text-sm uppercase tracking-widest">{children}</span>}
+        </div>
+      );
+    case 'ShinyText':
+      return (
+        <div className="h-full w-full flex items-center justify-center p-6 bg-zinc-900/50">
+          <ShinyText {...props} text={children || props.text || "Shiny Text"} />
+        </div>
+      );
+    case 'TiltedCard':
+      return (
+        <div className="h-full w-full flex items-center justify-center bg-zinc-900/50 overflow-hidden">
+          <TiltedCard {...props} />
+        </div>
+      );
+    case 'DecryptedText':
+      return (
+        <div className="h-full w-full flex items-center justify-center p-6 bg-zinc-900/50">
+          <DecryptedText {...props} text={children || props.text || "Decrypted"} />
+        </div>
+      );
+    case 'SplitText':
+      return (
+        <div className="h-full w-full flex items-center justify-center p-6 bg-zinc-900/50">
+          <SplitText {...props} text={children || props.text || "Split Text"} />
+        </div>
+      );
+    default:
+      return <div className="p-4 text-red-500">Unknown Component: {component}</div>;
+  }
+};
 
 export function BentoGrid({ data }: BentoGridProps) {
   // Fallback data
@@ -83,17 +146,17 @@ export function BentoGrid({ data }: BentoGridProps) {
           {/* Content - Floating on top */}
           <div className="relative z-10 h-full flex flex-col justify-end p-8 md:p-10">
             <div className="space-y-4 max-w-2xl">
-              <div 
+              <div
                 className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-medium text-[var(--foreground)] w-fit"
               >
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 Open to opportunities
               </div>
-              
+
               <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-[var(--foreground)] leading-[0.9]">
                 {safeData.name}
               </h1>
-              
+
               <p className="text-xl md:text-2xl text-[var(--muted)] font-medium tracking-tight flex items-center gap-3">
                 <span className="w-8 h-1 rounded-full" style={{ backgroundColor: safeData.colorTheme }} />
                 {safeData.title}
@@ -160,8 +223,8 @@ export function BentoGrid({ data }: BentoGridProps) {
               <div
                 key={index}
                 className="px-4 py-2 bg-gradient-to-br from-[var(--background)] to-[var(--card)] border border-[var(--border)] rounded-lg text-sm font-medium shadow-sm hover:scale-105 transition-transform cursor-default"
-                style={{ 
-                  borderLeft: index % 3 === 0 ? `2px solid ${safeData.colorTheme}` : undefined 
+                style={{
+                  borderLeft: index % 3 === 0 ? `2px solid ${safeData.colorTheme}` : undefined
                 }}
               >
                 {skill}
@@ -177,18 +240,20 @@ export function BentoGrid({ data }: BentoGridProps) {
           key={`custom-${index}`}
           variants={item}
           className={`
-            col-span-1 
-            md:col-span-${Math.min(node.colSpan, 4)} 
-            lg:col-span-${Math.min(node.colSpan, 6)} 
+            col-span-1
+            md:col-span-${Math.min(node.colSpan, 4)}
+            lg:col-span-${Math.min(node.colSpan, 6)}
             row-span-${node.rowSpan}
           `}
         >
           <BentoCard className="h-full overflow-hidden" noPadding={true}>
             {node.type === 'html' ? (
-               <div 
+               <div
                  className="h-full w-full"
-                 dangerouslySetInnerHTML={{ __html: node.content }} 
+                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(node.content) }}
                />
+            ) : node.type === 'react-component' ? (
+               <DynamicComponent node={node} />
             ) : (
                <div className="h-full w-full p-6 flex items-center justify-center text-[var(--muted)]">
                  {node.content}

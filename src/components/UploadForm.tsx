@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Toaster, toast } from "sonner";
+import SpotlightCard from "./SpotlightCard";
 
 interface UploadFormProps {
   onSubmit: (data: { image: File; text: string }) => void;
@@ -24,7 +25,7 @@ export function UploadForm({ onSubmit }: UploadFormProps) {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       handleImageUpload(files[0]);
@@ -33,12 +34,12 @@ export function UploadForm({ onSubmit }: UploadFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!image) {
       toast.error("Please upload an image");
       return;
     }
-    
+
     if (!text.trim()) {
       toast.error("Please provide some information about yourself");
       return;
@@ -50,54 +51,55 @@ export function UploadForm({ onSubmit }: UploadFormProps) {
   return (
     <div className="max-w-2xl mx-auto">
       <Toaster position="top-center" />
-      
+
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Image Upload */}
         <div className="space-y-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Upload Your Photo (Selfie or any photo)
           </label>
-          
-          <div
-            className={`border border-[var(--border)] rounded-3xl p-10 text-center transition-all duration-300 bg-[var(--card)] ${
-              isDragging ? "ring-2 ring-[var(--accent)] scale-[1.02]" : "hover:shadow-xl hover:border-[var(--accent)]/50"
-            }`}
-            onDrop={handleDrop}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-          >
-            {image ? (
-              <div className="space-y-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={URL.createObjectURL(image)}
-                  alt="Preview"
-                  className="max-w-xs max-h-48 mx-auto rounded-lg shadow-soft"
-                />
-                <button
-                  type="button"
-                  onClick={() => setImage(null)}
-                  className="text-[var(--muted)] hover:opacity-80 text-sm"
-                >
-                  Remove image
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="mx-auto w-12 h-12 bg-[var(--background)] rounded-full flex items-center justify-center border border-[var(--border)]">
-                  <svg className="w-6 h-6 text-[var(--muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
+
+          <SpotlightCard className="rounded-3xl bg-[var(--card)] border border-[var(--border)] overflow-hidden">
+            <div
+              className={`p-10 text-center transition-all duration-300 ${
+                isDragging ? "bg-[var(--accent)]/10" : ""
+              }`}
+              onDrop={handleDrop}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+            >
+              {image ? (
+                <div className="space-y-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={URL.createObjectURL(image)}
+                    alt="Preview"
+                    className="max-w-xs max-h-48 mx-auto rounded-lg shadow-soft"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImage(null)}
+                    className="text-[var(--muted)] hover:opacity-80 text-sm"
+                  >
+                    Remove image
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-[var(--muted)]">
-                    Drop your image here, or{" "}
-                    <label className="text-[var(--accent)] hover:opacity-80 cursor-pointer">
-                      browse
-                      <input
+              ) : (
+                <div className="space-y-4">
+                  <div className="mx-auto w-12 h-12 bg-[var(--background)] rounded-full flex items-center justify-center border border-[var(--border)]">
+                    <svg className="w-6 h-6 text-[var(--muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[var(--muted)]">
+                      Drop your image here, or{" "}
+                      <label className="text-[var(--accent)] hover:opacity-80 cursor-pointer">
+                        browse
+                        <input
                         type="file"
                         accept="image/*"
                         className="hidden"
@@ -115,6 +117,7 @@ export function UploadForm({ onSubmit }: UploadFormProps) {
               </div>
             )}
           </div>
+          </SpotlightCard>
         </div>
 
         {/* Text Input */}
