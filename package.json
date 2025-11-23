@@ -7,7 +7,7 @@
     "dev:host": "bash start-host.sh",
     "build": "next build",
     "start": "next start",
-    "prod": "npx --yes kill-port 3000 && next build && next start",
+    "prod": "node start-prod.js",
     "lint": "eslint"
   },
   "dependencies": {
